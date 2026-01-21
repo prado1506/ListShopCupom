@@ -11,9 +11,18 @@
   <section>
     <h2>Keywords ({{ total_keywords }})</h2>
     <ul id="keywords-list">
-      {% for key, value in keywords.items() %}
-        <li>{{ key }} - regex: {{ value.regex }}</li>
-      {% endfor %}
+      {% if keywords is iterable and keywords is not string %}
+        {% for entry in keywords %}
+          <li>
+            ID: {{ entry.id }} | {{ entry.palavra }} - regex: {{ entry.regex if entry.regex else '❌' }}
+            <button type="button" onclick="removeKeyword({{ entry.id }})">Remover</button>
+          </li>
+        {% endfor %}
+      {% else %}
+        {% for key, value in keywords.items() %}
+          <li>{{ key }} - regex: {{ value.regex if value.regex else '❌' }}</li>
+        {% endfor %}
+      {% endif %}
     </ul>
 
     <h3>Adicionar Keyword</h3>
@@ -47,10 +56,36 @@
       const data = await res.json();
       const ul = document.getElementById("keywords-list");
       ul.innerHTML = "";
-      for (const [key, val] of Object.entries(data)) {
-        const li = document.createElement("li");
-        li.textContent = `${key} - regex: ${val.regex}`;
-        ul.appendChild(li);
+      
+      // Verificar se é array (novo formato) ou objeto (formato antigo)
+      if (Array.isArray(data)) {
+        data.forEach(entry => {
+          const li = document.createElement("li");
+          const regex = entry.regex || '❌';
+          li.innerHTML = `ID: ${entry.id} | ${entry.palavra} - regex: ${regex} <button type="button" onclick="removeKeyword(${entry.id})">Remover</button>`;
+          ul.appendChild(li);
+        });
+      } else {
+        // Formato antigo (compatibilidade)
+        for (const [key, val] of Object.entries(data)) {
+          const li = document.createElement("li");
+          li.textContent = `${key} - regex: ${val.regex || '❌'}`;
+          ul.appendChild(li);
+        }
+      }
+    }
+
+    async function removeKeyword(keywordId) {
+      const res = await fetch("/keywords/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: new URLSearchParams({ keyword_id: keywordId.toString() })
+      });
+
+      if (res.ok) {
+        await reloadKeywords();
+      } else {
+        console.error("Erro ao remover keyword", await res.text());
       }
     }
 

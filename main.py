@@ -1,9 +1,10 @@
 import json
 import logging
 import re
+import os
 from pathlib import Path
 from telethon import TelegramClient, events
-from config import API_ID, API_HASH, ALERT_CHAT, KEYWORDS_FILE
+from config import BOT_TOKEN, API_ID, API_HASH, ALERT_CHAT, KEYWORDS_FILE
 
 # ========================
 # Paths
@@ -49,12 +50,35 @@ def save_json(path, data):
 # ========================
 # Data
 # ========================
-keywords = load_json(Path(KEYWORDS_FILE), {})
+def migrate_keywords_old_format(data):
+    """Converte formato antigo (dict) para novo formato (list)"""
+    if isinstance(data, dict):
+        result = []
+        for palavra, cfg in data.items():
+            result.append({
+                "id": len(result) + 1,
+                "palavra": palavra,
+                "regex": cfg.get("regex") if isinstance(cfg, dict) else None
+            })
+        return result
+    return data if isinstance(data, list) else []
+
+keywords_data = load_json(Path(KEYWORDS_FILE), [])
+keywords = migrate_keywords_old_format(keywords_data)
+
+# Garantir que sempre seja uma lista
+if not isinstance(keywords, list):
+    keywords = []
+
 ignore_list = load_json(IGNORE_FILE, [])
 
 # ========================
 # Telegram Client
 # ========================
+# Verificar configurações
+if not API_ID or not API_HASH:
+    raise ValueError("Configure API_ID e API_HASH no arquivo .env (obtenha em https://my.telegram.org)")
+
 client = TelegramClient("listshopcupom_session", API_ID, API_HASH)
 
 # ========================
@@ -82,11 +106,19 @@ async def add_keyword(event):
     palavra = args[0].lower()
     regex = args[1] if len(args) > 1 else None
 
-    keywords[palavra] = {"regex": regex}
+    # Gerar novo ID único
+    next_id = max([k.get("id", 0) for k in keywords] + [0]) + 1
+    
+    # Adicionar nova entrada
+    keywords.append({
+        "id": next_id,
+        "palavra": palavra,
+        "regex": regex
+    })
     save_json(Path(KEYWORDS_FILE), keywords)
 
-    logger.info(f"Keyword adicionada: {palavra} | regex={regex}")
-    await event.reply(f"✅ Palavra adicionada:\n{palavra}")
+    logger.info(f"Keyword adicionada (ID: {next_id}): {palavra} | regex={regex}")
+    await event.reply(f"✅ Palavra adicionada (ID: {next_id}):\n{palavra}\nregex: {regex if regex else '❌'}")
 
 @client.on(events.NewMessage(pattern=r'^/list$'))
 async def list_keywords(event):
@@ -95,9 +127,11 @@ async def list_keywords(event):
         return
 
     msg = [f"Total de palavras monitoradas: {len(keywords)}\n"]
-    for k, v in keywords.items():
-        r = v.get("regex")
-        msg.append(f"Palavra: {k}\nregex: {r if r else '❌'}\n")
+    for entry in keywords:
+        palavra = entry.get("palavra", "")
+        regex = entry.get("regex")
+        entry_id = entry.get("id", "?")
+        msg.append(f"ID: {entry_id} | Palavra: {palavra}\nregex: {regex if regex else '❌'}\n")
 
     await event.reply("\n".join(msg))
 
@@ -142,25 +176,56 @@ async def watcher(event):
     if should_ignore(text):
         return
 
-    for palavra, cfg in keywords.items():
+    for entry in keywords:
+        palavra = entry.get("palavra", "")
         if palavra not in text:
             continue
 
-        regex = cfg.get("regex")
+        regex = entry.get("regex")
         if regex:
             if not re.search(regex, event.text, re.IGNORECASE | re.DOTALL):
                 continue
 
-        logger.info(f"Match detectado: {palavra}")
+        entry_id = entry.get("id", "?")
+        logger.info(f"Match detectado (ID: {entry_id}): {palavra}")
         await client.send_message(
             ALERT_CHAT,
-            f"🚨 Palavra detectada\n\nPalavra: {palavra}\nRegex: {regex or '❌'}\n\n{event.text}"
+            f"🚨 Palavra detectada (ID: {entry_id})\n\nPalavra: {palavra}\nRegex: {regex or '❌'}\n\n{event.text}"
         )
         break
 
 # ========================
 # Start
 # ========================
-logger.info("ListShopCupom iniciado.")
-client.start()
-client.run_until_disconnected()
+async def main():
+    logger.info("ListShopCupom iniciado.")
+    
+    try:
+        if BOT_TOKEN:
+            # Modo bot oficial - inicia com token
+            await client.start(bot_token=BOT_TOKEN)
+            logger.info("✅ Bot oficial iniciado com sucesso!")
+        else:
+            # Modo cliente pessoal (compatibilidade)
+            await client.start()
+            logger.info("✅ Cliente Telethon iniciado com sucesso!")
+        
+        # Obter informações do bot/usuário
+        me = await client.get_me()
+        is_bot = await client.is_bot()
+        bot_type = "Bot oficial" if is_bot else "Cliente pessoal"
+        logger.info(f"Conectado como: {me.first_name} (@{me.username if me.username else 'N/A'}) - {bot_type}")
+        
+        if is_bot:
+            logger.info("🤖 Bot está pronto para receber comandos!")
+        else:
+            logger.info("👤 Cliente pessoal está monitorando mensagens...")
+        
+        await client.run_until_disconnected()
+    except Exception as e:
+        logger.error(f"Erro ao iniciar: {e}")
+        raise
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import json
 import shlex
+import os
+from config import PORT
 
 app = FastAPI(title="ListShopCupom")
 
@@ -43,6 +45,20 @@ def save_json(path: Path, data):
     )
 
 
+def migrate_keywords_old_format(data):
+    """Converte formato antigo (dict) para novo formato (list)"""
+    if isinstance(data, dict):
+        result = []
+        for palavra, cfg in data.items():
+            result.append({
+                "id": len(result) + 1,
+                "palavra": palavra,
+                "regex": cfg.get("regex") if isinstance(cfg, dict) else None
+            })
+        return result
+    return data if isinstance(data, list) else []
+
+
 def parse_quoted_args(raw: str):
     """
     Exemplo: '"cupom sophee" ".*\\\\d+\\\\s?%"'
@@ -58,7 +74,10 @@ def parse_quoted_args(raw: str):
 # -------------------------
 @app.get("/")
 def index(request: Request):
-    keywords = load_json(KEYWORDS_FILE, {})
+    keywords_data = load_json(KEYWORDS_FILE, [])
+    keywords = migrate_keywords_old_format(keywords_data)
+    if not isinstance(keywords, list):
+        keywords = []
     ignores = load_json(IGNORE_FILE, [])
     return templates.TemplateResponse(
         "index.html",
@@ -77,7 +96,11 @@ def index(request: Request):
 # -------------------------
 @app.get("/keywords")
 def list_keywords():
-    return load_json(KEYWORDS_FILE, {})
+    keywords_data = load_json(KEYWORDS_FILE, [])
+    keywords = migrate_keywords_old_format(keywords_data)
+    if not isinstance(keywords, list):
+        keywords = []
+    return keywords
 
 
 @app.post("/keywords/add")
@@ -89,25 +112,46 @@ def add_keyword(raw: str = Form(...)):
     palavra = args[0].lower()
     regex = args[1] if len(args) > 1 else None
 
-    keywords = load_json(KEYWORDS_FILE, {})
-    keywords[palavra] = {"regex": regex}
+    keywords_data = load_json(KEYWORDS_FILE, [])
+    keywords = migrate_keywords_old_format(keywords_data)
+    if not isinstance(keywords, list):
+        keywords = []
+
+    # Gerar novo ID único
+    next_id = max([k.get("id", 0) for k in keywords] + [0]) + 1
+
+    # Adicionar nova entrada
+    keywords.append({
+        "id": next_id,
+        "palavra": palavra,
+        "regex": regex
+    })
     save_json(KEYWORDS_FILE, keywords)
 
-    return {"status": "ok", "palavra": palavra, "regex": regex}
+    return {"status": "ok", "id": next_id, "palavra": palavra, "regex": regex}
 
 
 @app.post("/keywords/remove")
-def remove_keyword(palavra: str = Form(...)):
-    palavra = palavra.lower()
-    keywords = load_json(KEYWORDS_FILE, {})
+def remove_keyword(keyword_id: str = Form(...)):
+    try:
+        keyword_id_int = int(keyword_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="ID inválido")
+    
+    keywords_data = load_json(KEYWORDS_FILE, [])
+    keywords = migrate_keywords_old_format(keywords_data)
+    if not isinstance(keywords, list):
+        keywords = []
 
-    if palavra not in keywords:
+    # Buscar por ID
+    original_len = len(keywords)
+    keywords = [k for k in keywords if k.get("id") != keyword_id_int]
+
+    if len(keywords) == original_len:
         raise HTTPException(status_code=404, detail="Palavra não encontrada")
 
-    del keywords[palavra]
     save_json(KEYWORDS_FILE, keywords)
-
-    return {"status": "ok", "removed": palavra}
+    return {"status": "ok", "removed_id": keyword_id_int}
 
 
 # -------------------------
@@ -146,4 +190,10 @@ def remove_ignore(termo: str = Form(...)):
     save_json(IGNORE_FILE, ignores)
 
     return {"status": "ok", "removed": termo}
+
+
+# Para executar o servidor web diretamente
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
 

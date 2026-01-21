@@ -32,3 +32,59 @@
 2026-01-20 20:09:23,023 [INFO] Disconnecting from 149.154.175.51:443/TcpFull...
 2026-01-20 20:09:23,023 [INFO] Disconnection from 149.154.175.51:443/TcpFull complete!
 2026-01-20 20:09:23,024 [INFO] Not disconnecting (already have no connection)
+2026-01-20 20:13:29,762 [INFO] ListShopCupom iniciado.
+2026-01-20 20:13:29,764 [INFO] Connecting to 149.154.175.51:443/TcpFull...
+2026-01-20 20:13:29,920 [INFO] Connection to 149.154.175.51:443/TcpFull complete!
+2026-01-20 20:13:51,326 [INFO] Match detectado: cupom:
+2026-01-20 20:13:56,765 [INFO] Got difference for channel 2257102652 updates
+2026-01-20 20:14:07,510 [INFO] Match detectado: cupom
+2026-01-20 20:17:26,891 [INFO] Match detectado: cupom
+2026-01-20 20:17:43,863 [INFO] Keyword adicionada: hyperx | regex=None
+2026-01-20 20:17:44,036 [INFO] Match detectado: hyperx
+2026-01-20 20:17:58,080 [INFO] Keyword adicionada: razer | regex=None
+2026-01-20 20:17:58,293 [INFO] Match detectado: razer
+2026-01-20 20:18:14,078 [INFO] Keyword adicionada: astro | regex=None
+2026-01-20 20:18:14,248 [INFO] Match detectado: astro
+2026-01-20 20:18:20,444 [INFO] Keyword adicionada: logitech | regex=None
+2026-01-20 20:18:20,617 [INFO] Match detectado: logitech
+2026-01-20 20:18:46,003 [INFO] Keyword adicionada: hyper x | regex=None
+2026-01-20 20:18:46,175 [INFO] Match detectado: hyper x
+2026-01-20 20:19:38,225 [INFO] Keyword adicionada: codigo: | regex=None
+2026-01-20 20:19:38,395 [INFO] Match detectado: codigo:
+2026-01-20 20:20:31,210 [INFO] Match detectado: cupom
+2026-01-20 20:25:07,956 [INFO] Match detectado: cupom:
+2026-01-20 20:28:31,144 [INFO] Got difference for account updates
+2026-01-20 20:28:31,316 [INFO] Got difference for channel 1522377398 updates
+2026-01-20 20:28:31,813 [INFO] Got difference for channel 1737861551 updates
+2026-01-20 20:29:00,518 [INFO] Keyword adicionada: cupom | regex=.*\d+\s?%
+2026-01-20 20:30:23,156 [INFO] Keyword adicionada: cupom | regex=None
+2026-01-20 20:30:23,326 [INFO] Match detectado: cupom
+2026-01-20 20:32:18,563 [INFO] Got difference for channel 2132445032 updates
+2026-01-20 20:33:31,279 [INFO] Match detectado: cupom:
+2026-01-20 20:33:31,288 [INFO] Match detectado: cupom:
+2026-01-20 20:35:31,308 [INFO] Match detectado: cupom:
+2026-01-20 20:37:31,307 [INFO] Match detectado: cupom:
+2026-01-20 20:37:31,315 [INFO] Match detectado: cupom:
+2026-01-20 20:37:59,831 [INFO] Disconnecting from 149.154.175.51:443/TcpFull...
+2026-01-20 20:37:59,831 [INFO] Disconnection from 149.154.175.51:443/TcpFull complete!
+2026-01-20 20:37:59,831 [INFO] Not disconnecting (already have no connection)
+2026-01-20 20:38:11,097 [INFO] ListShopCupom iniciado.
+2026-01-20 20:38:11,098 [INFO] Connecting to 149.154.175.51:443/TcpFull...
+2026-01-20 20:38:11,237 [INFO] Connection to 149.154.175.51:443/TcpFull complete!
+2026-01-20 20:38:48,482 [INFO] Keyword adicionada (ID: 10): cupom | regex=.*\d+\s?%
+2026-01-20 20:38:48,636 [INFO] Match detectado (ID: 2): cupom
+2026-01-20 20:43:12,187 [INFO] Match detectado (ID: 1): cupom:
+2026-01-20 20:50:12,267 [INFO] Match detectado (ID: 1): cupom:
+2026-01-20 20:53:12,306 [INFO] Got difference for channel 2132445032 updates
+2026-01-20 20:54:12,341 [INFO] Match detectado (ID: 2): cupom
+2026-01-20 20:57:04,732 [INFO] Match detectado (ID: 1): cupom:
+2026-01-20 20:57:24,843 [INFO] Disconnecting from 149.154.175.51:443/TcpFull...
+2026-01-20 20:57:24,844 [INFO] Disconnection from 149.154.175.51:443/TcpFull complete!
+2026-01-20 20:57:24,844 [INFO] Not disconnecting (already have no connection)
+2026-01-20 21:12:19,094 [INFO] ListShopCupom iniciado.
+2026-01-20 21:12:19,095 [INFO] Connecting to 149.154.175.51:443/TcpFull...
+2026-01-20 21:12:19,267 [INFO] Connection to 149.154.175.51:443/TcpFull complete!
+2026-01-20 21:12:20,368 [INFO] ✅ Bot oficial iniciado com sucesso!
+2026-01-20 21:12:20,546 [INFO] Conectado como: Guilherme (@SlesherPlay) - Cliente pessoal
+2026-01-20 21:12:20,547 [INFO] 👤 Cliente pessoal está monitorando mensagens...
+2026-01-20 21:13:19,706 [INFO] Match detectado (ID: 2): cupom
