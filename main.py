@@ -2,8 +2,10 @@ import json
 import logging
 import re
 import os
+import asyncio
 from pathlib import Path
 from telethon import TelegramClient, events
+from telethon.errors import TypeNotFoundError, SessionPasswordNeededError
 from config import BOT_TOKEN, API_ID, API_HASH, ALERT_CHAT, KEYWORDS_FILE
 
 # ========================
@@ -197,35 +199,73 @@ async def watcher(event):
 # ========================
 # Start
 # ========================
+async def connect_client():
+    """Conecta o cliente do Telegram"""
+    if BOT_TOKEN:
+        # Modo bot oficial - inicia com token
+        await client.start(bot_token=BOT_TOKEN)
+        logger.info("✅ Bot oficial iniciado com sucesso!")
+    else:
+        # Modo cliente pessoal (compatibilidade)
+        await client.start()
+        logger.info("✅ Cliente Telethon iniciado com sucesso!")
+    
+    # Obter informações do bot/usuário
+    me = await client.get_me()
+    is_bot = await client.is_bot()
+    bot_type = "Bot oficial" if is_bot else "Cliente pessoal"
+    logger.info(f"Conectado como: {me.first_name} (@{me.username if me.username else 'N/A'}) - {bot_type}")
+    
+    if is_bot:
+        logger.info("🤖 Bot está pronto para receber comandos!")
+    else:
+        logger.info("👤 Cliente pessoal está monitorando mensagens...")
+    
+    return is_bot
+
 async def main():
     logger.info("ListShopCupom iniciado.")
     
-    try:
-        if BOT_TOKEN:
-            # Modo bot oficial - inicia com token
-            await client.start(bot_token=BOT_TOKEN)
-            logger.info("✅ Bot oficial iniciado com sucesso!")
-        else:
-            # Modo cliente pessoal (compatibilidade)
-            await client.start()
-            logger.info("✅ Cliente Telethon iniciado com sucesso!")
-        
-        # Obter informações do bot/usuário
-        me = await client.get_me()
-        is_bot = await client.is_bot()
-        bot_type = "Bot oficial" if is_bot else "Cliente pessoal"
-        logger.info(f"Conectado como: {me.first_name} (@{me.username if me.username else 'N/A'}) - {bot_type}")
-        
-        if is_bot:
-            logger.info("🤖 Bot está pronto para receber comandos!")
-        else:
-            logger.info("👤 Cliente pessoal está monitorando mensagens...")
-        
-        await client.run_until_disconnected()
-    except Exception as e:
-        logger.error(f"Erro ao iniciar: {e}")
-        raise
+    max_reconnect_attempts = 5
+    reconnect_delay = 10  # segundos
+    
+    while True:
+        try:
+            # Conectar o cliente
+            is_bot = await connect_client()
+            
+            # Executar até desconectar
+            await client.run_until_disconnected()
+            
+        except TypeNotFoundError as e:
+            logger.warning(f"TypeNotFoundError detectado (sessão pode estar desatualizada): {e}")
+            logger.info("Tentando reconectar em 10 segundos...")
+            
+            try:
+                await client.disconnect()
+            except:
+                pass
+            
+            await asyncio.sleep(reconnect_delay)
+            continue
+            
+        except (SessionPasswordNeededError, Exception) as e:
+            logger.error(f"Erro crítico: {e}")
+            
+            # Tentar desconectar antes de sair
+            try:
+                await client.disconnect()
+            except:
+                pass
+            
+            # Se não for TypeNotFoundError, parar após algumas tentativas
+            max_reconnect_attempts -= 1
+            if max_reconnect_attempts <= 0:
+                logger.error("Máximo de tentativas de reconexão atingido. Encerrando.")
+                raise
+            
+            logger.info(f"Tentando reconectar em {reconnect_delay} segundos... ({max_reconnect_attempts} tentativas restantes)")
+            await asyncio.sleep(reconnect_delay)
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
