@@ -17,20 +17,28 @@ mkdir -p "$LOG_DIR"
 
 case "$1" in
   start)
-    # Verifica dependência
+    # Verifica dependências
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
+    command -v termux-notification >/dev/null 2>&1 || { echo "Erro: termux-notification não encontrado. Rode: pkg install termux-api e instale o app Termux:API"; exit 1; }
+
     # Evita múltiplas instâncias
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
       echo "Já está rodando."
       exit 0
     fi
-    tmux new-session -d -s "$SESSION_NAME" "python main.py >> logs/main.log 2>&1" \
+
+    # Sobe o bot e o monitor de log (notifier) na mesma sessão tmux (2 panes)
+    tmux new-session -d -s "$SESSION_NAME" \
+      "python main.py >> logs/main.log 2>&1" ; \
+      split-window -t "$SESSION_NAME" -d \
+      "bash ./notifier.sh >> logs/notifier.log 2>&1" \
     && echo "Bot iniciado (tmux: $SESSION_NAME)." \
     && notify "Bot iniciado com sucesso." \
     || { echo "Falhou ao iniciar (tmux)."; notify "Falhou ao iniciar o bot."; exit 1; }
     ;;
   stop)
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
+
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
       tmux kill-session -t "$SESSION_NAME" \
       && echo "Bot parado." \
@@ -43,9 +51,11 @@ case "$1" in
     ;;
   status)
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
+
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
       echo "Bot rodando."
       echo "Log: $LOG_DIR/main.log"
+      echo "Log notifier: $LOG_DIR/notifier.log"
     else
       echo "Bot parado."
     fi
