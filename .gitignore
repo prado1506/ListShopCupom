@@ -12,7 +12,6 @@ dist/
 build/
 
 # Ambiente
-.env
 .env.local
 
 # Sessões do Telegram

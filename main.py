@@ -6,7 +6,7 @@ import asyncio
 from pathlib import Path
 from telethon import TelegramClient, events
 from telethon.errors import TypeNotFoundError, SessionPasswordNeededError
-from config import BOT_TOKEN, API_ID, API_HASH, ALERT_CHAT, KEYWORDS_FILE
+from config import BOT_TOKEN, API_ID, API_HASH, ALERT_CHAT, KEYWORDS_FILE, ALERT_RECIPIENTS
 
 # ========================
 # Paths
@@ -190,10 +190,24 @@ async def watcher(event):
 
         entry_id = entry.get("id", "?")
         logger.info(f"Match detectado (ID: {entry_id}): {palavra}")
-        await client.send_message(
-            ALERT_CHAT,
-            f"🚨 Palavra detectada (ID: {entry_id})\n\nPalavra: {palavra}\nRegex: {regex or '❌'}\n\n{event.text}"
+
+        mensagem = (
+            f"🚨 Palavra detectada (ID: {entry_id})\n\n"
+            f"Palavra: {palavra}\n"
+            f"Regex: {regex or '❌'}\n\n"
+            f"{event.text}"
         )
+
+        # Usa a lista de destinos do config (.env)
+        for destino in ALERT_RECIPIENTS:
+            destino = destino.strip()
+            if not destino:
+                continue
+            try:
+                await client.send_message(destino, mensagem)
+            except Exception as e:
+                logger.error(f"Falha ao enviar alerta para {destino}: {e}")
+
         break
 
 # ========================
