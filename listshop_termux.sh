@@ -1,7 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -e
 
-# Configuração do PATH
 export PATH=/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:$PATH
 
 PROJECT_DIR="$HOME/ListShopCupom"
@@ -9,7 +7,6 @@ LOG_DIR="$PROJECT_DIR/logs"
 SESSION_NAME="listshopcupom"
 
 notify() {
-  # Se Termux:API não estiver disponível, só não notifica (não quebra o script)
   command -v termux-notification >/dev/null 2>&1 || return 0
   termux-notification -t "ListShopCupom" -c "$1"
 }
@@ -26,25 +23,30 @@ case "${1:-}" in
       exit 0
     fi
 
-    # BOT (venv)
+    # Cria sessão e já abre a 2ª pane (notifier) numa única chamada do tmux.
     tmux new-session -d -s "$SESSION_NAME" \
-      "bash -lc 'cd "$PROJECT_DIR" && source ./venv/bin/activate && python main.py >> logs/main.log 2>&1'" \
-    \
-    # NOTIFIER (monitora log e manda notificação quando aparecer Match detectado...)
-    && tmux split-window -t "$SESSION_NAME" -d \
-      "bash -lc 'cd "$PROJECT_DIR" && bash ./notifier.sh >> logs/notifier.log 2>&1'" \
-    && echo "Bot iniciado (tmux: $SESSION_NAME)." \
-    && notify "Bot iniciado com sucesso." \
-    || { echo "Falhou ao iniciar (tmux)."; notify "Falhou ao iniciar o bot."; exit 1; }
+      "bash -lc 'cd "$PROJECT_DIR" && source ./venv/bin/activate && python main.py >> logs/main.log 2>&1'" ; \
+      split-window -t "$SESSION_NAME" -d \
+      "bash -lc 'cd "$PROJECT_DIR" && bash ./notifier.sh >> logs/notifier.log 2>&1'"
+
+    if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+      echo "Bot iniciado (tmux: $SESSION_NAME)."
+      notify "Bot iniciado com sucesso."
+      exit 0
+    else
+      echo "Falhou ao iniciar (tmux)."
+      notify "Falhou ao iniciar o bot."
+      exit 1
+    fi
     ;;
 
   stop)
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
+
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-      tmux kill-session -t "$SESSION_NAME" \
-      && echo "Bot parado." \
-      && notify "Bot parado com sucesso." \
-      || { echo "Falhou ao parar (tmux)."; notify "Falhou ao parar o bot."; exit 1; }
+      tmux kill-session -t "$SESSION_NAME"
+      echo "Bot parado."
+      notify "Bot parado com sucesso."
     else
       echo "Bot não está rodando."
       notify "Bot não está rodando."
@@ -53,6 +55,7 @@ case "${1:-}" in
 
   status)
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
+
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
       echo "Bot rodando."
       echo "Log: $LOG_DIR/main.log"
