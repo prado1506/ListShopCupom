@@ -24,8 +24,9 @@ case "${1:-}" in
     fi
 
     tmux new-session -d -s "$SESSION_NAME" \
-      "bash -lc 'cd "$PROJECT_DIR" && . ./venv/bin/activate && python3 main.py >> logs/main.log 2>&1'" ; \
-      split-window -t "$SESSION_NAME" -d \
+      "bash -lc 'cd "$PROJECT_DIR" && . ./venv/bin/activate && python3 main.py >> logs/main.log 2>&1'"
+
+    tmux split-window -t "$SESSION_NAME" -d \
       "bash -lc 'cd "$PROJECT_DIR" && bash ./notifier.sh >> logs/notifier.log 2>&1'"
 
     echo "Bot iniciado (tmux: $SESSION_NAME)."
