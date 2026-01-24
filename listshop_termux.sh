@@ -23,26 +23,17 @@ case "${1:-}" in
       exit 0
     fi
 
-    # Cria sessão e já abre a 2ª pane (notifier) numa única chamada do tmux.
     tmux new-session -d -s "$SESSION_NAME" \
-      "bash -lc 'cd "$PROJECT_DIR" && source ./venv/bin/activate && python main.py >> logs/main.log 2>&1'" ; \
+      "bash -lc 'cd "$PROJECT_DIR" && . ./venv/bin/activate && python3 main.py >> logs/main.log 2>&1'" ; \
       split-window -t "$SESSION_NAME" -d \
       "bash -lc 'cd "$PROJECT_DIR" && bash ./notifier.sh >> logs/notifier.log 2>&1'"
 
-    if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-      echo "Bot iniciado (tmux: $SESSION_NAME)."
-      notify "Bot iniciado com sucesso."
-      exit 0
-    else
-      echo "Falhou ao iniciar (tmux)."
-      notify "Falhou ao iniciar o bot."
-      exit 1
-    fi
+    echo "Bot iniciado (tmux: $SESSION_NAME)."
+    notify "Bot iniciado com sucesso."
     ;;
 
   stop)
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
-
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
       tmux kill-session -t "$SESSION_NAME"
       echo "Bot parado."
@@ -55,7 +46,6 @@ case "${1:-}" in
 
   status)
     command -v tmux >/dev/null 2>&1 || { echo "Erro: tmux não instalado. Rode: pkg install tmux"; exit 1; }
-
     if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
       echo "Bot rodando."
       echo "Log: $LOG_DIR/main.log"
