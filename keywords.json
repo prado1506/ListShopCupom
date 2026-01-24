@@ -48,5 +48,20 @@
     "id": 10,
     "palavra": "cupom",
     "regex": ".*\\d+\\s?%"
+  },
+  {
+    "id": 11,
+    "palavra": "50/120",
+    "regex": null
+  },
+  {
+    "id": 12,
+    "palavra": "20/60",
+    "regex": null
+  },
+  {
+    "id": 13,
+    "palavra": "10/40",
+    "regex": null
   }
 ]
